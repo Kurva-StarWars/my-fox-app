@@ -9,7 +9,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-startup-image" href="https://img.icons8.com/fluency/600/fox.png">
 
-    <title>HTMLingo | Level Up</title>
+    <title>HTMLingo | AI Edition</title>
     
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,133 +17,134 @@
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        @keyframes wiggle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(10deg); } }
+        @keyframes wiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
         .animate-wiggle { animation: wiggle 3s ease-in-out infinite; }
-        body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; font-family: system-ui, -apple-system, sans-serif; }
-        .custom-card { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .custom-card:active { transform: scale(0.95); }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+        .btn-press:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-50 font-sans text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- КОМПОНЕНТ ЛИСЕНКА ---
-        const Foxie = ({ mood = 'happy' }) => (
-            <div className="relative w-32 h-32 mx-auto animate-wiggle">
-                <svg viewBox="0 0 100 100" className="drop-shadow-xl">
-                    <path d="M75 75 C95 70 105 45 85 35 C70 28 65 45 75 60" fill="#F97316" />
-                    <circle cx="50" cy="75" r="22" fill="#FB923C" />
-                    <path d="M25 50 C25 30 75 30 75 50 C75 72 50 82 25 50" fill="#FB923C" />
-                    <path d="M25 50 C35 60 50 63 75 50 C65 70 50 72 25 50" fill="white" />
-                    <circle cx="42" cy="48" r="3" fill="#1E293B" />
-                    <circle cx="58" cy="48" r="3" fill="#1E293B" />
-                    <circle cx="50" cy="54" r="2.5" fill="#000" />
-                </svg>
+        // --- ВСТАВЬ СВОЙ КЛЮЧ ТУТ ---
+        const GEMINI_API_KEY = 'ВСТАВЬ_СЮДА_КЛЮЧ'; 
+
+        const Foxie = () => (
+            <div className="w-32 h-32 mx-auto animate-wiggle">
+                <img src="https://img.icons8.com/fluency/200/fox.png" alt="Лис" />
             </div>
         );
 
         const App = () => {
             const [view, setView] = useState('login');
             const [user, setUser] = useState({ id: '', xp: 0, level: 1 });
-            const [inputId, setInputId] = useState('');
+            const [currentLesson, setCurrentLesson] = useState(null);
+            const [aiContent, setAiContent] = useState('');
+            const [loading, setLoading] = useState(false);
 
-            // Загрузка данных из памяти телефона
             useEffect(() => {
-                const saved = localStorage.getItem('htmlingo_user');
-                if (saved) {
-                    const data = JSON.parse(saved);
-                    setUser(data);
-                    setView('home');
-                }
+                const saved = localStorage.getItem('htmlingo_data');
+                if (saved) { setUser(JSON.parse(saved)); setView('home'); }
             }, []);
 
-            const handleLogin = () => {
-                if (inputId.length < 3) return alert("ID слишком короткий!");
-                const newUser = { id: inputId.toUpperCase(), xp: 0, level: 1 };
-                setUser(newUser);
-                localStorage.setItem('htmlingo_user', JSON.stringify(newUser));
-                setView('home');
+            const save = (data) => {
+                setUser(data);
+                localStorage.setItem('htmlingo_data', JSON.stringify(data));
             };
 
-            const addXP = (amount) => {
-                const updated = { ...user, xp: user.xp + amount };
-                if (updated.xp >= 100) {
-                    updated.level += 1;
-                    updated.xp = 0;
+            const generateAIContent = async (topic) => {
+                setLoading(true);
+                setAiContent('');
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Ты учитель HTML. Напиши очень короткий и понятный урок для 6 класса на тему: ${topic}. Используй сленг, смайлики и в конце добавь пример кода.` }] }]
+                        })
+                    });
+                    const data = await response.json();
+                    setAiContent(data.candidates[0].content.parts[0].text);
+                } catch (e) {
+                    setAiContent("Ошибка! Проверь API ключ в коде. 🛑");
                 }
-                setUser(updated);
-                localStorage.setItem('htmlingo_user', JSON.stringify(updated));
+                setLoading(false);
             };
 
-            if (view === 'login') {
-                return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-orange-50 text-center">
-                        <Foxie />
-                        <h1 className="text-6xl font-black text-orange-600 mb-2 mt-4">HTMLingo</h1>
-                        <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-xs">Level Up Your Code</p>
-                        <div className="w-full max-w-sm bg-white p-8 rounded-[3rem] shadow-2xl border-b-8 border-orange-100">
-                            <input 
-                                type="text" 
-                                placeholder="ТВОЙ ID..." 
-                                value={inputId}
-                                onChange={(e) => setInputId(e.target.value)}
-                                className="w-full bg-slate-50 p-5 rounded-3xl mb-6 border-2 border-slate-100 outline-none font-black text-2xl text-center"
-                            />
-                            <button onClick={handleLogin} className="w-full py-6 bg-orange-500 text-white rounded-3xl font-black text-xl shadow-lg active:scale-95 transition-all">ПОГНАЛИ 🚀</button>
-                        </div>
-                    </div>
-                );
-            }
+            const openLesson = (lesson) => {
+                setCurrentLesson(lesson);
+                generateAIContent(lesson.title);
+            };
+
+            const completeLesson = () => {
+                let newXp = user.xp + currentLesson.xp;
+                let newLevel = user.level;
+                if (newXp >= 100) { newLevel++; newXp = 0; }
+                save({ ...user, xp: newXp, level: newLevel });
+                setCurrentLesson(null);
+            };
+
+            if (view === 'login') return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-10 bg-orange-50 text-center">
+                    <Foxie />
+                    <h1 className="text-5xl font-black text-orange-600 mb-8 mt-4">HTMLingo</h1>
+                    <input 
+                        type="text" placeholder="ТВОЙ ID..." 
+                        className="w-full max-w-xs p-5 rounded-3xl mb-4 border-none shadow-lg text-center font-bold"
+                        onChange={(e) => setUser({...user, id: e.target.value.toUpperCase()})}
+                    />
+                    <button onClick={() => {if(user.id) {setView('home'); save(user);}}} className="bg-orange-500 text-white px-10 py-5 rounded-3xl font-black shadow-xl btn-press">ВХОД 🚀</button>
+                </div>
+            );
 
             return (
-                <div className="min-h-screen pb-20">
-                    <header className="bg-white p-6 shadow-sm flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-xl">🦊</div>
-                            <span className="font-black text-slate-800">{user.id}</span>
+                <div className="min-h-screen p-6 max-w-md mx-auto">
+                    <div className="flex justify-between items-center mb-10 bg-white p-4 rounded-3xl shadow-sm">
+                        <div className="font-black">🦊 {user.id}</div>
+                        <div className="flex gap-2">
+                            <span className="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold">LVL {user.level}</span>
+                            <span className="bg-yellow-400 text-white px-3 py-1 rounded-full text-xs font-bold">XP {user.xp}/100</span>
                         </div>
-                        <div className="flex gap-4">
-                            <div className="bg-orange-500 text-white px-4 py-1 rounded-full font-black text-sm italic">LVL {user.level}</div>
-                            <div className="bg-yellow-400 text-white px-4 py-1 rounded-full font-black text-sm italic">XP {user.xp}</div>
-                        </div>
-                    </header>
+                    </div>
 
-                    <main className="px-6 max-w-lg mx-auto space-y-6">
-                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
-                            <h2 className="text-3xl font-black mb-2 uppercase">Твой статус</h2>
-                            <p className="text-slate-400 font-bold">Ты на пути к мастеру HTML!</p>
-                            <div className="mt-6 h-4 bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${user.xp}%` }}></div>
+                    <h2 className="text-2xl font-black mb-6 text-slate-400 uppercase tracking-tighter">Твои темы:</h2>
+                    
+                    {[
+                        { title: "Заголовки <h1>", xp: 20, icon: "🔥" },
+                        { title: "Списки <ul>", xp: 35, icon: "📜" },
+                        { title: "Ссылки <a>", xp: 50, icon: "🔗" }
+                    ].map((l, i) => (
+                        <div key={i} onClick={() => openLesson(l)} className="bg-white p-6 rounded-[2rem] mb-4 shadow-md flex items-center gap-4 cursor-pointer btn-press border-b-4 border-slate-100">
+                            <div className="text-3xl">{l.icon}</div>
+                            <div className="flex-1 font-black text-lg">{l.title}</div>
+                            <div className="text-orange-500 font-bold">+{l.xp}XP</div>
+                        </div>
+                    ))}
+
+                    {currentLesson && (
+                        <div className="fixed inset-0 bg-white z-50 p-8 overflow-y-auto">
+                            <div className="flex justify-between mb-8">
+                                <button onClick={() => setCurrentLesson(null)} className="text-slate-400 font-bold underline">Назад</button>
+                                <div className="text-3xl">{currentLesson.icon}</div>
                             </div>
-                        </div>
-
-                        <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest mt-10">Доступные уроки</h3>
-                        
-                        {[
-                            { id: 1, title: "Тег Заголовка", desc: "Узнай про <h1>", xp: 20, icon: "🏷️" },
-                            { id: 2, title: "Параграфы", desc: "Пишем текст в <p>", xp: 30, icon: "📝" },
-                            { id: 3, title: "Картинки", desc: "Вставляем <img>", xp: 50, icon: "🖼️" }
-                        ].map(lesson => (
-                            <div key={lesson.id} onClick={() => addXP(lesson.xp)} className="bg-white p-6 rounded-3xl shadow-md border-b-4 border-slate-200 flex items-center gap-5 custom-card cursor-pointer">
-                                <div className="text-4xl bg-slate-50 w-16 h-16 flex items-center justify-center rounded-2xl shadow-inner">{lesson.icon}</div>
-                                <div className="flex-1">
-                                    <h4 className="font-black text-slate-800 text-xl leading-tight">{lesson.title}</h4>
-                                    <p className="text-slate-400 font-bold text-sm uppercase">{lesson.desc}</p>
+                            <h2 className="text-4xl font-black mb-6">{currentLesson.title}</h2>
+                            {loading ? (
+                                <div className="text-center py-20 animate-bounce text-4xl">🦊 Соображаю...</div>
+                            ) : (
+                                <div className="bg-slate-100 p-6 rounded-[2rem] text-lg leading-relaxed whitespace-pre-wrap font-medium">
+                                    {aiContent}
                                 </div>
-                                <div className="text-orange-500 font-black text-sm">+{lesson.xp}XP</div>
-                            </div>
-                        ))}
-
-                        <button 
-                            onClick={() => { localStorage.clear(); window.location.reload(); }}
-                            className="w-full py-4 text-slate-300 font-black uppercase text-xs hover:text-rose-500 transition-colors"
-                        >
-                            Сбросить прогресс и выйти
-                        </button>
-                    </main>
+                            )}
+                            {!loading && (
+                                <button onClick={completeLesson} className="w-full mt-8 bg-orange-500 text-white py-6 rounded-3xl font-black text-xl shadow-2xl btn-press">
+                                    ПОНЯЛ! +{currentLesson.xp}XP 🏆
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         };
