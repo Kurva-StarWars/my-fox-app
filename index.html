@@ -3,58 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/300/fox.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/300/fox.png">
-    <title>HTMLingo | Учись кодить</title>
+    <link rel="apple-touch-startup-image" href="https://img.icons8.com/fluency/600/fox.png">
+
+    <title>HTMLingo | Level Up</title>
     
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <style>
         @keyframes wiggle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(10deg); } }
         .animate-wiggle { animation: wiggle 3s ease-in-out infinite; }
-        @keyframes blink { 0%, 90%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0); } }
-        .animate-blink { animation: blink 4s infinite; }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #FB923C; border-radius: 10px; }
-        body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+        body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; font-family: system-ui, -apple-system, sans-serif; }
+        .custom-card { transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .custom-card:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="bg-orange-50 custom-scroll">
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- Иконки (Замена Lucide на Emoji для стабильности) ---
-        const Icons = {
-            Flame: () => <span>🔥</span>,
-            Star: () => <span>⭐</span>,
-            Book: () => <span>📖</span>,
-            User: () => <span>👤</span>,
-            Settings: () => <span>⚙️</span>,
-            Check: () => <span>✅</span>,
-            Lock: () => <span>🔒</span>,
-            Camera: () => <span>📷</span>,
-            Code: () => <span>💻</span>
-        };
-
-        const FoxieAvatar = ({ mood = 'happy', className = "w-32 h-32" }) => (
-            <div className={`relative ${className} transition-all duration-500`}>
-                <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl overflow-visible">
-                    <path d="M75 75 C95 70 105 45 85 35 C70 28 65 45 75 60" fill="#F97316" className="animate-wiggle origin-bottom-left" />
+        // --- КОМПОНЕНТ ЛИСЕНКА ---
+        const Foxie = ({ mood = 'happy' }) => (
+            <div className="relative w-32 h-32 mx-auto animate-wiggle">
+                <svg viewBox="0 0 100 100" className="drop-shadow-xl">
+                    <path d="M75 75 C95 70 105 45 85 35 C70 28 65 45 75 60" fill="#F97316" />
                     <circle cx="50" cy="75" r="22" fill="#FB923C" />
-                    <g>
-                        <path d="M30 40 L45 20 L55 40 Z" fill="#EA580C" /> 
-                        <path d="M70 40 L55 20 L45 40 Z" fill="#EA580C" />
-                    </g>
                     <path d="M25 50 C25 30 75 30 75 50 C75 72 50 82 25 50" fill="#FB923C" />
                     <path d="M25 50 C35 60 50 63 75 50 C65 70 50 72 25 50" fill="white" />
-                    <circle cx="42" cy="48" r="3" fill="#1E293B" className="animate-blink" />
-                    <circle cx="58" cy="48" r="3" fill="#1E293B" className="animate-blink" />
+                    <circle cx="42" cy="48" r="3" fill="#1E293B" />
+                    <circle cx="58" cy="48" r="3" fill="#1E293B" />
                     <circle cx="50" cy="54" r="2.5" fill="#000" />
                 </svg>
             </div>
@@ -62,94 +47,102 @@
 
         const App = () => {
             const [view, setView] = useState('login');
-            const [customId, setCustomId] = useState('');
-            const [xp, setXp] = useState(0);
-            const [completed, setCompleted] = useState([]);
+            const [user, setUser] = useState({ id: '', xp: 0, level: 1 });
+            const [inputId, setInputId] = useState('');
 
-            const curriculum = [
-                { id: 1, title: 'Твой первый тег', topic: 'Заголовки h1' },
-                { id: 2, title: 'Абзацы и текст', topic: 'Теги p и br' },
-                { id: 3, title: 'Списки дел', topic: 'ul и li' }
-            ];
+            // Загрузка данных из памяти телефона
+            useEffect(() => {
+                const saved = localStorage.getItem('htmlingo_user');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    setUser(data);
+                    setView('home');
+                }
+            }, []);
+
+            const handleLogin = () => {
+                if (inputId.length < 3) return alert("ID слишком короткий!");
+                const newUser = { id: inputId.toUpperCase(), xp: 0, level: 1 };
+                setUser(newUser);
+                localStorage.setItem('htmlingo_user', JSON.stringify(newUser));
+                setView('home');
+            };
+
+            const addXP = (amount) => {
+                const updated = { ...user, xp: user.xp + amount };
+                if (updated.xp >= 100) {
+                    updated.level += 1;
+                    updated.xp = 0;
+                }
+                setUser(updated);
+                localStorage.setItem('htmlingo_user', JSON.stringify(updated));
+            };
 
             if (view === 'login') {
                 return (
-                    <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center bg-orange-50">
-                        <FoxieAvatar className="w-48 h-48 mb-6" />
-                        <h1 className="text-6xl font-black text-orange-600 mb-2 tracking-tighter">HTMLingo</h1>
-                        <p className="text-slate-500 mb-10 font-bold uppercase tracking-widest text-xs">Level Up Your Code</p>
+                    <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-orange-50 text-center">
+                        <Foxie />
+                        <h1 className="text-6xl font-black text-orange-600 mb-2 mt-4">HTMLingo</h1>
+                        <p className="text-slate-500 font-bold mb-10 uppercase tracking-widest text-xs">Level Up Your Code</p>
                         <div className="w-full max-w-sm bg-white p-8 rounded-[3rem] shadow-2xl border-b-8 border-orange-100">
                             <input 
                                 type="text" 
                                 placeholder="ТВОЙ ID..." 
-                                value={customId}
-                                onChange={(e) => setCustomId(e.target.value.toUpperCase())}
-                                class="w-full bg-slate-50 p-5 rounded-3xl mb-6 border-2 border-slate-100 outline-none font-black text-2xl text-center text-slate-700"
+                                value={inputId}
+                                onChange={(e) => setInputId(e.target.value)}
+                                className="w-full bg-slate-50 p-5 rounded-3xl mb-6 border-2 border-slate-100 outline-none font-black text-2xl text-center"
                             />
-                            <button onClick={() => setView('home')} class="w-full py-6 bg-orange-500 text-white rounded-3xl font-black text-xl shadow-xl shadow-orange-200 active:scale-95 transition-all">
-                                ПОГНАЛИ 🚀
-                            </button>
+                            <button onClick={handleLogin} className="w-full py-6 bg-orange-500 text-white rounded-3xl font-black text-xl shadow-lg active:scale-95 transition-all">ПОГНАЛИ 🚀</button>
                         </div>
                     </div>
                 );
             }
 
             return (
-                <div class="min-h-screen bg-slate-50 flex flex-col md:flex-row overflow-hidden">
-                    {/* Sidebar */}
-                    <nav class="w-full md:w-24 lg:w-64 bg-white border-r p-6 flex md:flex-col items-center gap-6 z-50 shadow-xl">
-                        <button onClick={() => setView('home')} class={`p-4 rounded-2xl ${view === 'home' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>🏠</button>
-                        <button onClick={() => setView('profile')} class={`p-4 rounded-2xl ${view === 'profile' ? 'bg-orange-500 text-white' : 'text-slate-400'}`}>👤</button>
-                    </nav>
-
-                    {/* Main */}
-                    <main class="flex-1 h-screen overflow-y-auto p-4 md:p-10 custom-scroll">
-                        <header class="max-w-5xl mx-auto flex items-center justify-between mb-10 bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100">
-                            <div class="flex gap-8">
-                                <div class="flex items-center gap-2"><Icons.Flame /> <span class="font-black text-2xl">3</span></div>
-                                <div class="flex items-center gap-2"><Icons.Star /> <span class="font-black text-2xl text-yellow-500">{xp}</span></div>
-                            </div>
-                            <div class="bg-orange-100 px-6 py-2 rounded-full font-black text-orange-700 text-sm">LVL 1</div>
-                        </header>
-
-                        <div class="max-w-5xl mx-auto">
-                            {view === 'home' && (
-                                <div class="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                                    <div class="bg-slate-900 rounded-[3rem] p-10 text-white flex items-center justify-between shadow-2xl overflow-hidden relative">
-                                        <div class="z-10">
-                                            <h2 class="text-4xl font-black mb-4 uppercase italic">Здарова, {customId}!</h2>
-                                            <p class="text-slate-400 font-bold mb-6 text-lg">Готов качнуть скиллы?</p>
-                                            <button class="bg-orange-500 px-8 py-4 rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-lg shadow-orange-500/40">УЧИТЬСЯ</button>
-                                        </div>
-                                        <FoxieAvatar className="w-32 h-32 opacity-80" />
-                                    </div>
-
-                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                        {curriculum.map(lesson => (
-                                            <div key={lesson.id} onClick={() => setXp(xp + 10)} class="bg-white p-8 rounded-[2.5rem] border-b-8 border-slate-200 hover:border-orange-500 transition-all cursor-pointer group">
-                                                <div class="text-4xl mb-4 group-hover:scale-110 transition-transform">📚</div>
-                                                <h4 class="font-black text-xl mb-1">{lesson.title}</h4>
-                                                <p class="text-xs font-bold text-slate-400 uppercase">{lesson.topic}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {view === 'profile' && (
-                                <div class="max-w-md mx-auto bg-white p-12 rounded-[4rem] text-center shadow-2xl border-b-[12px] border-slate-200">
-                                    <div class="w-40 h-40 bg-orange-100 rounded-[3rem] mx-auto mb-8 flex items-center justify-center">
-                                        <FoxieAvatar />
-                                    </div>
-                                    <h2 class="text-4xl font-black text-slate-800 mb-2">{customId}</h2>
-                                    <p class="text-orange-500 font-black mb-10 tracking-widest text-xs uppercase">HTML WARRIOR</p>
-                                    <div class="grid grid-cols-2 gap-4">
-                                        <div class="bg-slate-50 p-6 rounded-3xl"><p class="font-black text-2xl">{xp}</p><p class="text-[10px] text-slate-400 font-bold">XP</p></div>
-                                        <div class="bg-slate-50 p-6 rounded-3xl"><p class="font-black text-2xl">1</p><p class="text-[10px] text-slate-400 font-bold">LVL</p></div>
-                                    </div>
-                                </div>
-                            )}
+                <div className="min-h-screen pb-20">
+                    <header className="bg-white p-6 shadow-sm flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-xl">🦊</div>
+                            <span className="font-black text-slate-800">{user.id}</span>
                         </div>
+                        <div className="flex gap-4">
+                            <div className="bg-orange-500 text-white px-4 py-1 rounded-full font-black text-sm italic">LVL {user.level}</div>
+                            <div className="bg-yellow-400 text-white px-4 py-1 rounded-full font-black text-sm italic">XP {user.xp}</div>
+                        </div>
+                    </header>
+
+                    <main className="px-6 max-w-lg mx-auto space-y-6">
+                        <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl">
+                            <h2 className="text-3xl font-black mb-2 uppercase">Твой статус</h2>
+                            <p className="text-slate-400 font-bold">Ты на пути к мастеру HTML!</p>
+                            <div className="mt-6 h-4 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-orange-500 transition-all duration-1000" style={{ width: `${user.xp}%` }}></div>
+                            </div>
+                        </div>
+
+                        <h3 className="text-xl font-black text-slate-400 uppercase tracking-widest mt-10">Доступные уроки</h3>
+                        
+                        {[
+                            { id: 1, title: "Тег Заголовка", desc: "Узнай про <h1>", xp: 20, icon: "🏷️" },
+                            { id: 2, title: "Параграфы", desc: "Пишем текст в <p>", xp: 30, icon: "📝" },
+                            { id: 3, title: "Картинки", desc: "Вставляем <img>", xp: 50, icon: "🖼️" }
+                        ].map(lesson => (
+                            <div key={lesson.id} onClick={() => addXP(lesson.xp)} className="bg-white p-6 rounded-3xl shadow-md border-b-4 border-slate-200 flex items-center gap-5 custom-card cursor-pointer">
+                                <div className="text-4xl bg-slate-50 w-16 h-16 flex items-center justify-center rounded-2xl shadow-inner">{lesson.icon}</div>
+                                <div className="flex-1">
+                                    <h4 className="font-black text-slate-800 text-xl leading-tight">{lesson.title}</h4>
+                                    <p className="text-slate-400 font-bold text-sm uppercase">{lesson.desc}</p>
+                                </div>
+                                <div className="text-orange-500 font-black text-sm">+{lesson.xp}XP</div>
+                            </div>
+                        ))}
+
+                        <button 
+                            onClick={() => { localStorage.clear(); window.location.reload(); }}
+                            className="w-full py-4 text-slate-300 font-black uppercase text-xs hover:text-rose-500 transition-colors"
+                        >
+                            Сбросить прогресс и выйти
+                        </button>
                     </main>
                 </div>
             );
